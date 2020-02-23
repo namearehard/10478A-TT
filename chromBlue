@@ -1,0 +1,371 @@
+// To complete the VEXcode V5 Text project upgrade process, please follow the
+// steps below.
+// 
+// 1. You can use the Robot Configuration window to recreate your V5 devices
+//   - including any motors, sensors, 3-wire devices, and controllers.
+// 
+// 2. All previous code located in main.cpp has now been commented out. You
+//   will need to migrate this code to the new "int main" structure created
+//   below and keep in mind any new device names you may have set from the
+//   Robot Configuration window. 
+// 
+// If you would like to go back to your original project, a complete backup
+// of your original (pre-upgraded) project was created in a backup folder
+// inside of this project's folder.
+
+// ---- START VEXCODE CONFIGURED DEVICES ----
+// ---- END VEXCODE CONFIGURED DEVICES ----
+
+#include "vex.h"
+
+using namespace vex;
+
+
+  // Initializing Robot Configuration. DO NOT REMOVE!
+
+// /*----------------------------------------------------------------------------*/
+// /*                                                                            */
+// /*    Module:       main.cpp                                                  */
+// /*    Author:       C:\Users\danie                                            */
+// /*    Created:      Sat Sep 21 2019                                           */
+// /*    Description:  V5 project                                                */
+// /*                                                                            */
+// /*----------------------------------------------------------------------------*/
+// #include "vex.h"
+// 
+// // ---- START VEXCODE CONFIGURED DEVICES ----
+// // Robot Configuration:
+// // [Name]               [Type]        [Port(s)]
+// // ---- END VEXCODE CONFIGURED DEVICES ----
+// 
+// using namespace vex;
+// 
+// // A global instance of vex::brain used for printing to the V5 brain screen
+vex::controller Controller;
+vex::brain satan;
+vex::motor RightDriveTp = vex::motor(PORT13,true);
+vex::motor RightDriveBt = vex::motor(PORT12,true);
+vex::motor LeftDriveTp = vex::motor(PORT14);
+vex::motor LeftDriveBt = vex::motor(PORT15);
+vex::motor RightGather = vex::motor(PORT17);
+vex::motor LeftGather = vex::motor(PORT20, true);
+vex::motor stack = vex::motor(PORT16);
+vex::motor arm = vex::motor(PORT19);
+vex::competition Competition;
+
+vex::encoder rightWheel = vex::encoder(satan.ThreeWirePort.A);
+vex::encoder leftWheel = vex::encoder(satan.ThreeWirePort.G);
+
+#include <iostream>
+#include <cstring>
+#include <string.h>
+#include "stdarg.h"
+#include <sstream>
+template <typename T>
+std::string to_string(T value){
+  std::ostringstream os;
+  os << value;
+  return os.str();
+}
+
+void print(double d){
+    std::cout << d << std::endl;
+}
+
+// 
+// 4.85 from centre to tracking wheel
+// // define your global instances of motors and other devices here
+float drivePow = 0.8;
+int gatherSpd = 80;
+int Armspd = 40;
+int go;
+bool toggle;
+void bounc(){
+  go = 0;
+}
+
+void change(){
+  if(go == 0){
+    if(toggle){
+      toggle = false;
+    }
+    else{
+      toggle = true;
+    }
+    go += 1;
+  }
+}
+
+void driveTog(){
+  if(toggle){
+    drivePow = 0.4;
+  }
+  else{
+    drivePow = 1;
+  }
+}
+
+void Drive(float v){
+  RightDriveTp.spin(fwd, v, pct);
+   RightDriveBt.spin(fwd, v, pct);
+   LeftDriveTp.spin(fwd, v, pct);
+   LeftDriveBt.spin(fwd, v, pct);
+ }
+ 
+ void Driveback(){
+   RightDriveTp.spin(fwd, -60, pct);
+   RightDriveBt.spin(fwd, -60, pct);
+   LeftDriveTp.spin(fwd, -60, pct);
+   LeftDriveBt.spin(fwd, -60, pct);
+ }
+
+ void rightTurn(float v, float x){
+   float y = (2*4.85*x*3.14152965)/7.92;
+   print(y);
+   RightDriveTp.startRotateFor(vex::directionType::rev, y, deg, v, vex::velocityUnits::pct);
+   RightDriveBt.startRotateFor(vex::directionType::rev, y, deg, v, vex::velocityUnits::pct);
+   LeftDriveTp.startRotateFor(fwd, y, deg, v, vex::velocityUnits::pct);
+   LeftDriveBt.startRotateFor(fwd, y, deg, v, vex::velocityUnits::pct);
+   while(LeftDriveTp.isSpinning()){}
+ }
+
+ void turnRight(float v){
+   RightDriveTp.spin(fwd, v, pct);
+   RightDriveBt.spin(fwd, v, pct);
+ }
+
+ void turnLeft(float v){
+   LeftDriveBt.spin(fwd, v, pct);
+   LeftDriveTp.spin(fwd, v, pct);
+ }
+ void Drivestop(){
+   RightDriveTp.stop(brake);
+   RightDriveBt.stop(brake);
+   LeftDriveTp.stop(brake);
+   LeftDriveBt.stop(brake);
+ }
+// 
+ void Gather(){
+   RightGather.spin(fwd, gatherSpd, pct);
+   LeftGather.spin(fwd, gatherSpd, pct);
+ }
+ 
+ void GatherBack(){
+   RightGather.spin(fwd, -gatherSpd, pct);
+   LeftGather.spin(fwd, -gatherSpd, pct);
+ }
+// 
+ void armUp(){
+   arm.spin(fwd, 100, pct);
+   //stack.spin(fwd, 45, pct);
+}
+// 
+ void armDown(){
+   arm.spin(fwd, -100, pct);
+   //stack.spin(fwd, -45, pct);
+ }
+// 
+ void Stak(){
+   stack.spin(fwd, 100, pct);
+ }
+// 
+ void StakBack(){
+   stack.spin(fwd, -35, pct);
+ }
+// 
+ void brakeArm(){
+   arm.stop(hold);
+   //stack.stop();
+ }
+// 
+ void StakStop(){
+   stack.stop(brake);
+ }
+// 
+ void GatherStop(){
+   LeftGather.stop(brake);
+   RightGather.stop(brake);
+ }
+ void armMacUp(){
+   arm.spin(fwd, 100, pct);
+   if(stack.rotation(deg) > -240){
+     stack.spin(fwd, -60, pct);
+   }
+ }
+ void armMacDown(){
+   arm.spin(fwd, -100, pct);
+   if(stack.rotation(deg) < -20 && arm.rotation(deg) < 100){
+     stack.spin(fwd, 60, pct);
+   }
+ }
+ void armMacStop(){
+   arm.stop(hold);
+   stack.stop(brake);
+ }
+ void driveForward(float v, float d){
+   //3.25 inch diameter = 8.225 cm diameter
+   // = 25.829413 cm per full rotation
+  float y = (d/25.928413)*360;
+    RightDriveBt.startRotateFor(v, vex::deg, y, vex::velocityUnits::pct);
+    RightDriveTp.startRotateFor(v, vex::deg, y, vex::velocityUnits::pct);
+    LeftDriveBt.startRotateFor(v, vex::deg, y, vex::velocityUnits::pct);
+    LeftDriveTp.startRotateFor(v, vex::deg, y, vex::velocityUnits::pct);
+    while (RightDriveBt.isSpinning()){}
+
+ }
+
+void trackForwards(float v, float d){
+  float x = (d/26.829413)*360;
+  float rightOld = rightWheel.rotation(vex::deg);
+  float leftOld = leftWheel.rotation(vex::deg);
+  float rightTarget = rightOld - x;
+  float leftTarget = leftOld - x;
+  float rightError = rightTarget - rightWheel.rotation(deg);
+  float leftError = leftTarget - leftWheel.rotation(deg);
+
+  while(fabs(rightTarget - rightWheel.rotation(deg)) > 8 && fabs(leftTarget - leftWheel.rotation(deg)) > 8){
+    Drive(v);
+    print(rightError);
+    print(leftError);
+    rightError = rightTarget - rightWheel.rotation(deg);
+    leftError = leftTarget - leftWheel.rotation(deg);
+    vex::task::sleep(20);
+   }
+   Drivestop();
+ }
+
+void driveTime(float t, float v){
+  Drive(v);
+  vex::task::sleep(t);   
+}
+
+void trackRight(float v, float d){
+  float degr = (2*4.85*d*3.14152965)/29.829413;
+  float rightOld = rightWheel.rotation(vex::deg);
+  float leftOld = leftWheel.rotation(vex::deg);
+  float rightTarget = rightOld + degr;
+  float leftTarget = leftOld + degr;
+  float dr = fabs(rightTarget - rightWheel.rotation(deg));
+  float dl = fabs(leftTarget - leftWheel.rotation(deg));
+  while (dr > 8){
+    //print(dr);
+    dr = fabs(rightTarget - rightWheel.rotation(deg));
+    dl = fabs(leftTarget - leftWheel.rotation(deg));
+    if (dr > 8){
+      turnRight(-v*degr/fabs(degr));
+    }
+    else{
+      turnRight(0);
+    }
+    if (dl > 8){
+      turnLeft(v*degr/fabs(degr));
+    }
+    else{
+      turnLeft(0);
+    }
+    vex::task::sleep(20);
+  }
+  Drivestop();
+}
+
+void trackLeft(float v, float d){
+  float degr = (2*4.85*d*3.14152965)/25.829413;
+  float rightOld = RightDriveTp.rotation(vex::deg);
+  float leftOld = LeftDriveTp.rotation(vex::deg);
+  float rightTarget = rightOld + degr;
+  float leftTarget = leftOld + degr;
+  float dr = rightTarget - rightWheel.rotation(deg);
+  float dl = leftTarget - leftWheel.rotation(deg);
+  while(fabs(rightTarget - rightWheel.rotation(deg)) < 8 && fabs(leftTarget - leftWheel.rotation(deg)) < 8){
+    turnRight(-v);
+   }
+   Drivestop();
+}
+
+ void pre_auton( void ) {
+ }
+void autonomous( void ) {
+  arm.resetRotation();
+  arm.resetPosition();
+  stack.resetPosition();
+  stack.resetRotation();
+/*
+LeftGather.spin(vex::fwd, 60, pct);
+RightGather.spin(fwd, 60, pct);
+vex::task::sleep(1000);
+Drive(60);
+vex::task::sleep(2000);
+Drivestop();
+vex::task::sleep(500);
+Driveback();
+vex::task::sleep(500);
+Drivestop();*/
+
+
+LeftGather.spin(vex::fwd, 80, pct);
+RightGather.spin(fwd, 80, pct);
+vex::task::sleep(3000);
+LeftGather.spin(vex::fwd, -60, pct);
+RightGather.spin(fwd, -60, pct);
+trackForwards(40, 100);
+rightTurn(40,-118);
+driveTime(2000,80);
+Drivestop();
+LeftGather.stop(brake);
+RightGather.stop(brake);
+LeftGather.spin(vex::fwd, 20, pct);
+RightGather.spin(fwd, 20, pct);
+stack.rotateTo(-1050, deg, -60);
+LeftGather.spin(vex::fwd, 0, pct);
+RightGather.spin(fwd, 0, pct);
+driveTime(1000,-30);
+}
+ void usercontrol( void ) {
+   while (1) {
+   LeftDriveTp.spin(fwd, Controller.Axis3.value()*drivePow, pct);
+   LeftDriveBt.spin(fwd, Controller.Axis3.value()*drivePow, pct);
+   RightDriveBt.spin(fwd, Controller.Axis2.value()*drivePow, pct);
+   RightDriveTp.spin(fwd, Controller.Axis2.value()*drivePow, pct);
+   Controller.ButtonR1.pressed(armMacUp);
+   Controller.ButtonR1.released(armMacStop);
+   Controller.ButtonR2.pressed(armMacDown);
+   Controller.ButtonR2.released(armMacStop);
+   Controller.ButtonL1.pressed(Gather);
+   Controller.ButtonL1.released(GatherStop);
+   Controller.ButtonL2.pressed(GatherBack);
+   Controller.ButtonL2.released(GatherStop);
+   Controller.ButtonB.pressed(Stak);
+   Controller.ButtonB.released(StakStop);
+   Controller.ButtonA.pressed(StakBack);
+   Controller.ButtonA.released(StakStop);
+   Controller.ButtonLeft.pressed(change);
+   Controller.ButtonLeft.released(bounc);
+   driveTog();
+
+   if(Controller.ButtonR1.pressing() && stack.rotation(deg) < -240){
+     StakStop();
+    }
+   if(Controller.ButtonR2.pressing() && (stack.rotation(deg) > 0 || arm.rotation(deg) > 100)){
+     StakStop();
+    }
+   }
+     vex::task::sleep(20); //Sleep the task for a short amount of time to prevent wasted resources. 
+   }
+ 
+// 
+// //
+// // Main will set up the competition functions and callbacks.
+// //
+ int main() {
+//     //Set up callbacks for autonomous and driver control periods.
+     Competition.autonomous( autonomous );
+     Competition.drivercontrol( usercontrol );
+//     
+//     //Run the pre-autonomous function. 
+     pre_auton();
+//        
+//     //Prevent main from exiting with an infinite loop.                        
+     while(1) {
+       vex::task::sleep(100);//Sleep the task for a short amount of time to prevent wasted resources.
+     }
+ }
