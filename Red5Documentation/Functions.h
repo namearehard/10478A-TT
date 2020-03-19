@@ -166,18 +166,22 @@ void liftStop(){
   liftRD.stop(vex::hold);
 }
 
+//closes clamp when buttons pressed (shuold probably be called clampClose or smth)
 void clampUp(){
   clamp.spin(vex::fwd, clamppow, vex::pct);
 }
 
+//open clamp when button pressed
 void clampDown(){
   clamp.spin(vex::fwd, -clamppow, vex::pct);
 }
 
+//brake clamp when closed
 void clampStop(){
   clamp.stop(vex::hold);
 }
 
+//move claw, not actually on our robot
 void clawUp(){
   claw.spin(vex::fwd, clawpow, vex::pct);
 }
@@ -190,55 +194,63 @@ void clawStop(){
   claw.stop(vex::brake);
 }
 
-void rightRamp(){
-  
-}
-
+//This function was an attempt to have the drive ramp up to its speed, instead of jolting to its speed right away
+//This was discontinues as max prefered the jolty movement, and this wasnt an issue with overheats, port blowing etc.
+//DO NOT study this closely, this was an abandoned piece of work early in the season, and is riddled with logical errors
 void ramp(){
-
+  //This variable is the difference between the right joystick value and the velocity of the right drive
+  //fabs turns the number from a negative to a positive, if its already positive it stays positive
+  //this is used to see whether there is a need to ramp to the different velocity
   double dR = fabs(MCkun.Axis2.value() - rightF.velocity(vex::pct));
 
+  //this is the target velocity of the right drive, which is dictated by the right joystick value
   double rightTarget = MCkun.Axis2.value();
 
+  //this is the left drive and joystick difference, identical to the right difference
   double dL = fabs(MCkun.Axis3.value() - leftF.velocity(vex::pct));
-
+  
+  //target velocity of the left drive
   double leftTarget = MCkun.Axis3.value();
 
-  if((leftTarget > 3 && rightTarget > 3)  || (leftTarget < -3 && rightTarget < -3) ){
-    if(fabs(rightTarget) < 3){
-      double rightSpd = 0;
-      rightB.stop(vex::coast);
-      rightF.stop(vex::coast);
-    }
-    else if(dR > 5){
-      if(rightTarget > rightF.velocity(vex::pct)){
-        //rightSpd += 5;
-      }
-      else{
-        //rightSpd -= 5;
-      }
-      //rightB.spin(vex::fwd,rightSpd,vex::pct);
-      //rightF.spin(vex::fwd,rightSpd,vex::pct);
-      vex::task::sleep(10);
-    }
-
-    if(fabs(leftTarget) < 3){ // anywhere to 0
-      //leftSpd = 0;
-      leftB.stop(vex::coast);
-      leftF.stop(vex::coast);
-    }
-    else if(dL > 5){ // anywhere to forwards
-      if(leftTarget > leftF.velocity(vex::pct)){
-        //leftSpd += 5;
-      }
-      else{
-        //leftSpd -= 5; //anywhere to backwards
-      }
-      //leftB.spin(vex::fwd,leftSpd,vex::pct);
-      //leftF.spin(vex::fwd,leftSpd,vex::pct);
-      vex::task::sleep(10);
-    }
+  //if the target was less than 3, the drive was set to coast
+  //this was because max didnt want the drive to ramp down, he wanted it to stop immediately, only wanted the ramp
+  //to activate when its moving backwards or forwards
+  if(fabs(rightTarget) < 3){
+    double rightSpd = 0;
+    rightB.stop(vex::coast);
+    rightF.stop(vex::coast);
   }
+  //here the ramp takes place, if the difference between the joystick and the drive was greater than 5, the power would
+  //increase by 5 or decrease by 5 depending on the direction of the joystick.
+  else if(dR > 5){ //check if difference is significant enough for ramp
+    if(rightTarget > rightF.velocity(vex::pct)){ //check if it needs to ramp up
+      //rightSpd += 5;
+    }
+    else{ //otherwise ramp down
+      //rightSpd -= 5;
+    }
+    //rightB.spin(vex::fwd,rightSpd,vex::pct);
+    //rightF.spin(vex::fwd,rightSpd,vex::pct);
+  }
+
+  //same logic for left side
+  if(fabs(leftTarget) < 3){ // anywhere to 0
+    //leftSpd = 0;
+    leftB.stop(vex::coast);
+    leftF.stop(vex::coast);
+  }
+  else if(dL > 5){ // anywhere to forwards
+    if(leftTarget > leftF.velocity(vex::pct)){
+      //leftSpd += 5;
+    }
+    else{
+      //leftSpd -= 5; //anywhere to backwards
+    }
+    //leftB.spin(vex::fwd,leftSpd,vex::pct);
+    //leftF.spin(vex::fwd,leftSpd,vex::pct);
+  }
+  
+  //idek
   else{
     leftF.spin(vex::fwd,leftTarget,vex::pct);
     rightF.spin(vex::fwd,rightTarget,vex::pct);
@@ -249,6 +261,12 @@ void ramp(){
   }
 }
 
+//this was also discontinued, and was to try and correct any turning when using the strafe drive using the gyro
+//The issue with this was that it wasnt possible to get a reliable gyro value when turning and strafing at the same time
+//limiting max to using only strafe by itself, which wasnt a limitation he was happy with
+//overall resolving this issue would take a lot more work with very little benefit
+//the logic used here is a PID, which will be annotated in the autonomous functions that incorporate it
+//so this will not be annotated
 void driveStrafeCorrect(double oldGyro, double newGyro, double d1){
   //double dr = d1-d2;
   /*
@@ -272,7 +290,12 @@ void driveStrafeCorrect(double oldGyro, double newGyro, double d1){
 }
 
 //Autonomous Control
+/*
+These are our autonomous functions that we use in our 15 second and skills autonomous
+These are called whenever we write that function in the autonomous function of our main file
+*/
 
+//stop drive when called
 void driveStop(){
   leftF.stop(vex::brake);
   rightF.stop(vex::brake);
@@ -280,6 +303,13 @@ void driveStop(){
   rightB.stop(vex::brake);
 }
 
+/*
+This was a successful attempt to resolve an issue where, when the robot was to move forward, it would veer to the side
+This uses the gyro value to get a measure of how much the robot has turned, and move the left drive accoding to that
+value to compensate for this
+This uses a technique called PID control loops. This stands for Proportional, Integral, and Derivative. Here the
+integral is not used.
+*/
 float fwdCorrect(float oldGyro, float newGyro, float v){
   double leftPow = v;
   double dE = 0;
