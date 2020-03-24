@@ -1,6 +1,7 @@
 /*
 This is our Functions file, here all of our functions are defined to move motors, get sensors, and all sorts of wacky stuff.
 It makes writing our autonomous and driver program in the main file much less of a headache, and much easier to read.
+
 Again, make sure that every function is named sensibly, it is a pain to find the right one, if theyre named nicely,
 you can just ctrl+f and search for it.
 */
@@ -9,7 +10,7 @@ you can just ctrl+f and search for it.
 /*
 each variable needs a data type to say what kind of information this variable holds
 - int is integer, these hold whole numbers
-- double and float are used for decimal numbers,double holds bigger numbers than float
+- double and float are used for decimal numbers, double holds bigger numbers than float
 - const stands for constant, and means that this variable cant be changed when the program is run
 - bool is just true or false
 for other types look up C++ data types
@@ -41,8 +42,8 @@ float leftPow;
 float rightPow;
 
 /*
-these includes and the two functions before driver control are just used to print numbers to the terminal,
-useful to see sensor and motor values for testing, particularly autonomous, and chacking whether functions
+These includes and the two functions before driver control are just used to print numbers to the terminal,
+useful to see sensor and motor values for testing, particularly autonomous, and checking whether functions
 are being run etc.
 
 Idk how they work, just copy paste it at the top of your programs
@@ -64,15 +65,15 @@ void print(double d){
 }
 // Drive Control
 /*
-These next thre functions are designed to flip the power of the drive between 30% and 100% whenever one button button is pressed
+These next three functions are designed to flip the power of the drive between 30% and 100% whenever one button button is pressed
 So there there are three parts to this:
 1. When the button is pressed, flip the power ONCE, there is a bit of an issue where when you press a button, the function
-is called multiple times, this isnt a problem with other drive functions, but for a one button flip. this must be resolved by
+is called multiple times, this isnt a problem with other drive functions, but for a one button flip. This must be resolved by
 creating a lock, so that when it is first pressed, the drive power is not changed any more until the button is released
 2. When the button is released, the drive power must be "flippable" again, so the lock by pressing the button is released
 3. Checking that whenever the power is flipped, what the power already is at to flip to the other power
 
-There are different ways to create this, look up edge calling for methods
+There are different ways to create this, look up edge-calling for methods
 */
 
 //this is the "bounce" function called when the button is released, this relases the lock created when the button is pressed
@@ -305,44 +306,50 @@ void driveStop(){
 
 /*
 This was a successful attempt to resolve an issue where, when the robot was to move forward, it would veer to the side
+
 This uses the gyro value to get a measure of how much the robot has turned, and move the left drive accoding to that
 value to compensate for this
-This uses a technique called PID control loops. This stands for Proportional, Integral, and Derivative. Here the
-integral is not used.
+
+This uses a technique called PID control loops. This stands for Proportional, Integral, and Derivative. Here only proportional is used
 */
+//function takes in gyro value from the start of moving forwards, current gyro value, and the velocity of moving forwards
 float fwdCorrect(float oldGyro, float newGyro, float v){
-  double leftPow = v;
-  double dE = 0;
-  double error = oldGyro;
-  double lastError = error;
+  double leftPow = v; //baseline left power
+  double error = oldGyro; //defines error
+  
   //diameter of wheel = 10.5cm
   //one rotation of motor = 32.98672cm
 
   //rotates depending on variable y, which is calculated above
-  newGyro = turnyBoi.rotation();
-  error = oldGyro-newGyro;
-  dE = error - lastError;
+  newGyro = turnyBoi.rotation(); //fetches gyro value
+  error = oldGyro-newGyro; //defines error as difference between reference value and current value
 
-  if(fabs(error) >= 0.2){
-    leftPow = v + error*1 + dE*10;
+  if(fabs(error) >= 0.2){ //change power if error is significant, after testing we chose 0.2 degrees
+    leftPow = v + error*1 + dE*10; //change power according to error
   }
-  lastError = error;
   return leftPow;
 }
 
+/*
+This was a function used to dictate how far the robot should move using a tracking wheel and proportional value.
+The target to move to was based on the rotational degrees of the tracking wheel.
+
+This incorporates the function above to accurately move to the target whilst correcting to move straight
+*/
+//takes in x, the number of cm to move to from start position, v velocity, and e error margin.
 void fwdTo(double x, double v, float e){
-  float y= -(x/34.9098*16/13)*360;
-  float target = y;
-  double rightPow = v;
+  float y= -(x/34.9098*16/13)*360; //converts cm to tracking wheel degrees
+  float target = y; //target
+  double rightPow = v; //set powers to velocities
   double leftPow = v;
-  double oldGyro = turnyBoi.rotation();
-  float error = fwdTrack.rotation(vex::deg) - target;
-  while(fabs(error) > e){
-    error = fwdTrack.rotation(vex::deg) - target;
-    double newGyro = turnyBoi.rotation();
-    print(error);
-    rightPow = error*0.8;
-    if(fabs(rightPow) > fabs(v)){
+  double oldGyro = turnyBoi.rotation(); //defines starting gyro position for fwdCorrect
+  float error = fwdTrack.rotation(vex::deg) - target; //error is defined as difference in degrees of wheel and target
+  while(fabs(error) > e){ //while greater than error margin.. chosen based on short/long distances
+    error = fwdTrack.rotation(vex::deg) - target; //error defined at start of loop
+    double newGyro = turnyBoi.rotation(); //new gyro value for fwdCorrect
+    print(error); //print for testing
+    rightPow = error*0.8; //proportional to error
+    if(fabs(rightPow) > fabs(v)){ //cap velocity to v so it isnt higher than specified
       if(error>0){
         rightPow = v;
       }
@@ -350,8 +357,9 @@ void fwdTo(double x, double v, float e){
         rightPow = -v;
       }
     }
-    leftPow = rightPow;
-    if(y > 0){
+    leftPow = rightPow; //set sides to match
+    leftPow = fwdCorrect(oldGyro, newGyro, leftPow); //change leftPow according to values
+    if(y > 0){ //set powers
       rightF.spin(vex::fwd, -rightPow, vex::velocityUnits::pct);
       leftF.spin(vex::fwd, -leftPow, vex::velocityUnits::pct);
       rightB.spin(vex::fwd, -rightPow, vex::velocityUnits::pct);
@@ -363,10 +371,9 @@ void fwdTo(double x, double v, float e){
       rightB.spin(vex::fwd, rightPow, vex::velocityUnits::pct);
       leftB.spin(vex::fwd, leftPow, vex::velocityUnits::pct);
     }
-    vex::task::sleep(20);
-    leftPow = fwdCorrect(oldGyro, newGyro, leftPow);
+    vex::task::sleep(20); //sleep to have roughly constant loop runtime
   }
-  driveStop();
+  driveStop(); //stop afterwards
 }
 
 void fwd(double x, double v, float e){
