@@ -376,6 +376,10 @@ void fwdTo(double x, double v, float e){
   driveStop(); //stop afterwards
 }
 
+/*
+Exactly the same as the fwdTo function, the only difference is the target is the addition of the x from its position
+Therefore I will not annotate this, simply refer to the previous function.
+*/
 void fwd(double x, double v, float e){
   float y= -(x/34.9098*16/13)*360;
   float target = fwdTrack.rotation(vex::deg) + y;
@@ -415,41 +419,45 @@ void fwd(double x, double v, float e){
   driveStop();
 }
 
+/*
+This function was used in our 15 second auton without using the tracking wheels. This simply usses a PD to correct for
+any turning whilst driving, and the forward does not have a PID.
+*/
 void driveForwards(float x, float v){
-    float y=(x/31.548)*360; //changes distance needed into degrees turn for motor
-    double oldGyro = turnyBoi.rotation();
-    rightB.resetRotation();
+    float y=(x/31.548)*360; //changes distance needed into degrees turn for motor based on circumference of wheel
+    double oldGyro = turnyBoi.rotation(); //gets base gyro value at start of forward
+    rightB.resetRotation(); //reset to check whether target (y) is reached
     double rightPow = v;
-    double leftPow = v;
-    double dE = 0;
-    double newGyro = turnyBoi.rotation();
-    double error = oldGyro;
-    double lastError = error;
+    double leftPow = v; //set powers
+    double dE = 0; //defined serivative function
+    double newGyro = turnyBoi.rotation(); //define new gyro
+    double error = oldGyro; //define error to be updated in loop
+    double lastError = error; //define last error
     //diameter of wheel = 10.5cm
     //one rotation of motor = 32.98672cm
 
     //rotates depending on variable y, which is calculated above
-    while(rightB.rotation(vex::deg) < y){
-      newGyro = turnyBoi.rotation();
-      error = oldGyro-newGyro;
-      dE = error - lastError;
+    while(rightB.rotation(vex::deg) < y){ //loop active while right back wheel has not yet reached target
+      newGyro = turnyBoi.rotation(); //store degrees of gyro
+      error = oldGyro-newGyro; //store how much turned
+      dE = error - lastError; //store difference in error
 
-      rightF.spin(vex::fwd, rightPow, vex::velocityUnits::pct);
+      rightF.spin(vex::fwd, rightPow, vex::velocityUnits::pct); //go forwards
       leftF.spin(vex::fwd, leftPow, vex::velocityUnits::pct);
       rightB.spin(vex::fwd, rightPow, vex::velocityUnits::pct);
       leftB.spin(vex::fwd, leftPow, vex::velocityUnits::pct);
-      if(fabs(error) >= 0.2){
+      if(fabs(error) >= 0.2){ //if turned more than two degrees...
         //print(error);
         //print(leftPow);
-        leftPow = v + error*1 + dE*10;
+        leftPow = v + error*1 + dE*10; //set powr based on error and change of error
       }
-      lastError = error;
-      vex::task::sleep(20);
+      lastError = error; //set last error to error at this loop for future rates
+      vex::task::sleep(20); //sleep for 20ms to keep looptime constant
     }
-    driveStop();
-
+    driveStop();//stop at end
 }
 
+//same as driveForwards but backwards and without turning correct
 void driveBackwards(float x, float v){
     float y=(x/31.548)*360; //changes distance needed into degrees turn for motor
     double oldGyro = turnyBoi.rotation();
@@ -482,46 +490,51 @@ void driveBackwards(float x, float v){
 
 }
 
+/*
+This was a function implementing a proportional loop to correct for angle change in the robot when using the strafe
+*/
 void strafeCorrect(double oldGyro, double newGyro, double target){
-  double d = fabs(newGyro - oldGyro);
-  while(d >= 1){
-    d = fabs(newGyro - oldGyro);
-    newGyro = turnyBoi.rotation();
-    if(fabs(track.rotation(vex::deg) - target) < 8){
-      break;
-    }
-    if(newGyro > oldGyro){
-      turn(-d*2.2);
+  double d = fabs(newGyro - oldGyro); //define error
+  if(d >= 1){ //while degree change is 1 or more degrees
+    d = fabs(newGyro - oldGyro); //set error
+    if(newGyro > oldGyro){ //check if turned to the right
+      turn(-d*2.2); //turned to the left proportional to error
     }
     else{
-      turn(d*2.2);
+      turn(d*2.2); //otherwise turn right
     }
   }
 }
 
+/*
+This was 
+*/
 void strafeRight(double x, double v){
-  float y=-(x/31.548*16/13)*360;
-  float target = track.rotation(vex::deg) + y;
-  double oldGyro = turnyBoi.rotation();
-  while(fabs(track.rotation(vex::deg) - target) > 8){
-    double newGyro = turnyBoi.rotation();
-    if(y > 0){
-      mDrive.spin(vex::fwd, -v, vex::velocityUnits::pct);
+  float y=-(x/31.548*16/13)*360; //set target based on circumference of tracking wheel
+  float target = track.rotation(vex::deg) + y; //target based on tracking wheel value
+  double oldGyro = turnyBoi.rotation(); //get old gyro value
+  while(fabs(track.rotation(vex::deg) - target) > 8){ //check if within 89 degrees of tracking wheel
+    double newGyro = turnyBoi.rotation(); //update degree value
+    if(y > 0){ //if target positive
+      mDrive.spin(vex::fwd, -v, vex::velocityUnits::pct); //run forward (negative because strafe and tracking were different directions
     }  
     else{
-      mDrive.spin(vex::fwd, v, vex::velocityUnits::pct);
+      mDrive.spin(vex::fwd, v, vex::velocityUnits::pct); //else run other direction
     }
-    //strafeCorrect(oldGyro, newGyro, target);
+    strafeCorrect(oldGyro, newGyro, target); //correct in loop
+    vex::task::sleep(20); //set sleep for correction
   }
-  mDrive.stop(vex::coast);
+  mDrive.stop(vex::coast); //stop after
 }
 
-void strafeTime(float v, float t){
-  mDrive.spin(vex::fwd, v, vex::pct);
-  vex::task::sleep(t);
-  mDrive.stop(vex::coast);
+//simple function to run strafe wheel for amount of time
+void strafeTime(float v, float t){ //takes in velocity and time
+  mDrive.spin(vex::fwd, v, vex::pct); //spin middle wheel
+  vex::task::sleep(t); //spin for this amount of time
+  mDrive.stop(vex::coast); //stop
 }
 
+//drive for specified time (without stop)
 void driveTime(float x, int t){
   leftF.spin(vex::fwd, x, vex::pct);
   rightF.spin(vex::fwd, x, vex::pct);
@@ -542,56 +555,76 @@ void driveBackwards(float x){
     while(leftB.isSpinning()){}
 }*/
 
+/*
+old function that would turn based on rotations of a motor, before we used the gyro
+
+the change in the multiple of the target y was based purely on percentage change after testing. eg if turns for 160 degrees
+instead of 180, multiply it by 180/160 as it needs to turn more
+*/
 void oldTurnRight(float w, float v){ //turns right, just add number in degree for turn
     float y=(w*1.30949*2);
-        //26.3 cm turning circle
-        //41.312 each wheel to cover full circle
-        //1.3095 rotation for full circle
-        //471.2 = full circle
-        leftF.startRotateFor(y,vex::rotationUnits::deg, v, vex::velocityUnits::pct);
-        rightF.startRotateFor(-y,vex::rotationUnits::deg, v, vex::velocityUnits::pct);
-        leftB.startRotateFor(y,vex::rotationUnits::deg, v, vex::velocityUnits::pct);
-        rightB.startRotateFor(-y,vex::rotationUnits::deg, v, vex::velocityUnits::pct);
-            //all turns wheels UNTIL while command is no longer met
+    //26.3 cm turning circle
+    //41.312 each wheel to cover full circle
+    //1.3095 rotation for full circle
+    //471.2 = full circle
+    leftF.startRotateFor(y,vex::rotationUnits::deg, v, vex::velocityUnits::pct);
+    rightF.startRotateFor(-y,vex::rotationUnits::deg, v, vex::velocityUnits::pct);
+    leftB.startRotateFor(y,vex::rotationUnits::deg, v, vex::velocityUnits::pct);
+    rightB.startRotateFor(-y,vex::rotationUnits::deg, v, vex::velocityUnits::pct);
+    //all turns wheels UNTIL while command is no longer met
     while(rightB.isSpinning()){}
 }
 
-void turnRightFor(float d, int v){
-  double target = turnyBoi.rotation(vex::deg) + d;
-  double lastError = target - turnyBoi.rotation(vex::deg);
-  double error = target - turnyBoi.rotation(vex::deg);
-  double t = god.Timer.value();
-  double dE = 0;
-  double iE = 0;
-  int counter = 0;
-  double speed = 0;
-  while(fabs(error) >= 0.4  && -t + god.Timer.value()< 1.8 && counter < 10){
-    error = target - turnyBoi.rotation();
-    dE = error - lastError;
-    iE += error;
-    speed = error*0.8 + 4*dE + iE*0.002;
-    if(speed > v){
-      speed = v;
-      iE = 0;
+/*
+most recent turn command using the gyro, turning for an amount as opposed to a target, using a full PID loop.
+
+we used turn for only in the 15 second auton simply because calibrating at the start of an alliance match is unreliable, as
+we couldn't spare the time to recalibrate, we did spare this time for our 1 minute skills autonomous.
+
+Much less accurate than turn to and with calibration, but good for when turns only need to be quick and dirty.
+*/
+void turnRightFor(float d, int v){ //take in degrees and velocity
+  double target = turnyBoi.rotation(vex::deg) + d; //target is degrees on top of current orientation
+  double lastError = target - turnyBoi.rotation(vex::deg); //define last error
+  double error = target - turnyBoi.rotation(vex::deg); //deine error
+  double t = god.Timer.value(); //get time at function call to ensure loop doesnt take too long
+  double dE = 0; //define derivative
+  double iE = 0; //define integral
+  int counter = 0; //used to adjust how long you need to be in target for
+  double speed = 0; //define power to motors
+  /*
+  the loop ends in two conditions:
+  1. That the error is less than or equal to 0.4 degrees for 10 consecutive loops - this made sure it corrected after overshooting
+  2. That the loop takes more than 1.8 seconds to end - this made sure the loop didnt get stuck at, eg, 0.41 error
+  */
+  while(fabs(error) >= 0.4  && god.Timer.value()-t < 1.8 && counter < 10){
+    error = target - turnyBoi.rotation(); //error updated
+    dE = error - lastError; //derivative updated
+    iE += error; //error added to integral
+    speed = error*0.8 + 4*dE + iE*0.002; //set power (doesnt matter if before or after integral adjustment as so miniscule, best after)
+    if(speed > v){ //if speed was higher than velocity input..
+      speed = v; //set speed at input max
+      iE = 0; //reset integral
     }
-    else if(speed < -v){
-      speed = -v;
-      iE = 0;
+    else if(speed < -v){ //if speed was too high but other direction..
+      speed = -v; //cap speed
+      iE = 0; //reset integral
     }
-    if(fabs(error) <= 0.4){
-      counter += 1;
+    if(fabs(error) <= 0.4){ //if target met..
+      counter += 1; //increment counter...
     }
-    else{
+    else{ //else reset counter
       counter = 0;
     }
-    turn(speed);
-    lastError = error;
-    print(error);
-    vex::wait(20, vex::msec);
+    turn(speed); //set turn speed as defined
+    lastError = error; //update lasterror
+    print(error); //print just for testing :P
+    vex::wait(20, vex::msec); //wait for loop to be roughly constant
   }
-  driveStop();
+  driveStop(); //stop when done
 }
 
+//asme as above but turn to, and without counter
 void turnRight(float d, int v){
   double lastError = d - turnyBoi.rotation(vex::deg);
   double error = d - turnyBoi.rotation(vex::deg);
@@ -620,6 +653,7 @@ void turnRight(float d, int v){
   driveStop();
 }
 
+//basic 
 void turnLeft(float d, int v){
   while(turnyBoi.rotation() > d){
     turn(-v);
