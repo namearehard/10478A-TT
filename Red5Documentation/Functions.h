@@ -653,7 +653,7 @@ void turnRight(float d, int v){
   driveStop();
 }
 
-//basic 
+//basic gyro turn, simply turn left until the target is met and then stop, no pid so not accurate at all
 void turnLeft(float d, int v){
   while(turnyBoi.rotation() > d){
     turn(-v);
@@ -671,23 +671,28 @@ void oldTurnLeft(float w){ //turns right, just add number in degree for turn
     while(rightB.isSpinning()){}
 }
 
-void arm(float d, float v, bool time, float timeThresh, float drive){
-  d = (d+3)*7;
-  double t1 = god.Timer.value();
-  liftLU.startRotateTo(d, vex::deg, v, vex::velocityUnits::pct);
+//Our simple arm command, as we decided the precision of a PID is not necessary
+//d is input for degrees, v for velocity
+//time is a true or false variable that is used to use or not use a timegate
+//timeThresh is the maximum amoount of time the arm should be running for iof time is True, 
+//and if it runs for too long than to exit the loop
+//We only used this when the lift would bottom out or get stuck
+void arm(float d, float v, bool time, float timeThresh){
+  d = (d+3)*7; //convert degrees of arm to degrees of arm, and make baseline 3 degrees of arm
+  double t1 = god.Timer.value(); //timer for timegating
+  liftLU.startRotateTo(d, vex::deg, v, vex::velocityUnits::pct); //rotate arms
   liftRU.startRotateTo(d, vex::deg, v, vex::velocityUnits::pct);
   liftLD.startRotateTo(d, vex::deg, v, vex::velocityUnits::pct);
   liftRD.startRotateTo(d, vex::deg, v, vex::velocityUnits::pct);
-  if(drive){
-  while(liftRD.isSpinning()){
-    if(time && god.Timer.value() - t1 < timeThresh){
-      print(god.Timer.value() - t1);
-      break;
-    }
+  while(liftRD.isSpinning()){ //dont let code move on if not finished
+    if(time && god.Timer.value() - t1 < timeThresh){ //timegate if appropriate
+      print(god.Timer.value() - t1); //for testing
+      break; //break if ran too long
     }
   }
 }
 
+//our main method of braking the arm, to hold it in place
 void holdArm(){
   liftLU.stop(vex::hold);
   liftRU.stop(vex::hold);
@@ -695,21 +700,23 @@ void holdArm(){
   liftRD.stop(vex::hold);
 }
 
+//run clamp for some amount of time
+//t is time, v is velocity
 void clampTime(int t, int v){
-  // where t is only 1 or -1
-  //t= t*3;
-  //clamp.startRotateFor(t, vex::deg, clamppow, vex::velocityUnits::pct);
   clamp.spin(vex::fwd, -v, vex::pct);
   vex::task::sleep(t);
-  //while(clamp.isSpinning()){}
+  clampStop();
 }
 
+//move clamp to a certain position
+//d is degree of clamp, v is velocity at which it opens
 void clampOpen(float d, float v){
-  d = d*5;
-  clamp.startRotateTo(d, vex::deg, v, vex::velocityUnits::pct);
-  while(clamp.isSpinning()){}
+  d = d*5; //convert claw degree to motor degree
+  clamp.startRotateTo(d, vex::deg, v, vex::velocityUnits::pct); //rotate to a certain degree position
+  while(clamp.isSpinning()){} //let finish without anything else interrupting
 }
 
+//brake EVERYTHING
 void godsBrake(){
   driveStop();
   clampStop();
