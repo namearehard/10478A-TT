@@ -305,6 +305,9 @@ void driveStop(){
 }
 
 /*
+PLEASE LOOK AT MOST UPDATED SKILLS CODE ON THE LAPTOP FOR THE FULLY WORKING VERSION, THIS FUNCTION HAS SOME ISSUES
+AND DIFFERENCES, AND UNFORTUNATELY HAVENT UPDATED SKILLS TO GITHUB AS OF YET
+
 This was a successful attempt to resolve an issue where, when the robot was to move forward, it would veer to the side
 
 This uses the gyro value to get a measure of how much the robot has turned, and move the left drive accoding to that
@@ -331,6 +334,9 @@ float fwdCorrect(float oldGyro, float newGyro, float v){
 }
 
 /*
+PLEASE LOOK AT MOST UPDATED SKILLS CODE ON THE LAPTOP FOR THE FULLY WORKING VERSION, THIS FUNCTION HAS SOME ISSUES
+AND DIFFERENCES, AND UNFORTUNATELY HAVENT UPDATED SKILLS TO GITHUB AS OF YET
+
 This was a function used to dictate how far the robot should move using a tracking wheel and proportional value.
 The target to move to was based on the rotational degrees of the tracking wheel.
 
@@ -377,6 +383,9 @@ void fwdTo(double x, double v, float e){
 }
 
 /*
+PLEASE LOOK AT MOST UPDATED SKILLS CODE ON THE LAPTOP FOR THE FULLY WORKING VERSION, THIS FUNCTION HAS SOME ISSUES
+AND DIFFERENCES, AND UNFORTUNATELY HAVENT UPDATED SKILLS TO GITHUB AS OF YET
+
 Exactly the same as the fwdTo function, the only difference is the target is the addition of the x from its position
 Therefore I will not annotate this, simply refer to the previous function.
 */
@@ -491,6 +500,9 @@ void driveBackwards(float x, float v){
 }
 
 /*
+PLEASE LOOK AT MOST UPDATED SKILLS CODE ON THE LAPTOP FOR THE FULLY WORKING VERSION, THIS FUNCTION HAS SOME ISSUES
+AND DIFFERENCES, AND UNFORTUNATELY HAVENT UPDATED SKILLS TO GITHUB AS OF YET
+
 This was a function implementing a proportional loop to correct for angle change in the robot when using the strafe
 */
 void strafeCorrect(double oldGyro, double newGyro, double target){
@@ -507,7 +519,8 @@ void strafeCorrect(double oldGyro, double newGyro, double target){
 }
 
 /*
-This was 
+This was used to strafe to a certain distance using a tracking wheel and the above pid to ensure that it is accurate
+x would set the distance in cm, and v the velocity of the strafe wheel in pct
 */
 void strafeRight(double x, double v){
   float y=-(x/31.548*16/13)*360; //set target based on circumference of tracking wheel
