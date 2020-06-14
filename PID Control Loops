@@ -1,0 +1,74 @@
+First, we will detail what issues we encountered when not using a PID loop and using a simple motor.rotatefor() command.
+1.  Using only rotations would cause mechanisms to overshoot, which would be fine if our error margins were lenient enough, or if the
+    overshoot was consistent. However, none of this was the case for moving the robot forwards/backwards, strafing, and especially when
+    turning. This resulted in inconsistent movements of the robot, which led to the autonomous working once in a few times.
+2.  To minimise the overshoot using this method, we had to run the motors at a very slow speed, and when writing ambitious autonomous 
+    routines, this was still now reliable enough and far too slow to score a high number of points in the time required.
+3.  Moving the robot forwards or strafing would cause the robot to turn due to uncontrolled asymmetry (such as the motors moving at
+    different velocities), and other factors. This would result in us needing to code with the turns taken into account, which took far too
+    much time to do, and generally unreliable
+    
+PID loops:
+PID control loops are a method of controlling motor velocity based on some idea of "error". This can be for example, how far away the
+robot is from a target, or how many degrees the robot needs to turn to face the intended direction, and can be measured using motor
+encoders, shaft encoders, and gyro sensors. This must be measured in constant time, typically 20ms for V5 devices, 10ms otherwise,
+in order to effectively make use of PID concepts.
+
+Proprotional error:
+Based on this idea of error, we can control how fast the robot is moving based on how close the robot is to its target. In general, if
+the error is small, we want the robot to be moving at a slower speed than when the error is large. This allows us to quickly approach
+the target and reduce the speed to once near for greater precision and reliability, eliminating overshoot in sufficient time.
+
+Using this notion, you want the speed of the motors to be proportional to the error, in mathematical terms, voltage = k*error. This
+is known as the proportional term, for the P in PID. This entails changing the constant term k until the robot moves in a smooth manner,
+or it oscillates with constant amplitude.
+  - If k is too high, the robot will be too fast when it reaches the target, and will reverse once it passes that target, and will 
+    oscillate with increasing error.
+  - If k is too low, the robot will never reach its target as the power is too little as it gets near the error.
+
+Differential error:
+In some cases, if tuned very well, a purely proportional loop is sufficient to control the robots movement, with no oscillation and
+reliable movement. However there are cases where this isnt possible, and the robot oscillates constantly. This can be solved using a
+differential component, the D term in PID.
+This measures the change in error for each loop, and slows down the robot accordingly. For example, if the error changes a lot, then the
+term will be large and slow it down significantly, however if error does not change much, then the D term will have little effect.
+
+So, dv = lastError - error, and voltage = kP*error - kD*dv, where kP is proportional constant, and kD is differential constant.
+
+This solves the issue of oscillation, as the point where the robot crosses the middle is where the robot moves quickest when
+oscillating, ie where the error changes the fastest, and will slow it down then.
+
+Again, you want to adjust the kD term until this is solved:
+  - If kD is too low, the oscillation will still occur
+  - If kD is too high, the robot will never reach its target
+  
+Integral of error:
+Even after adding a derivative term, or just a proportional term, the loop might stall trying to reach its target, but the power 
+provided is not enough to let it reach this target. The integral term serves to give the power a little boos when it is stalled so 
+that it can reach this target. This is doing by adding up the error each loop.
+
+integral = integral + error, voltage = kP*error - kD*dv + kI*integral. Often you want an if statement resetting the integral if the 
+power is too high, so that it doesnt affect power at the start, as it would be far too high. So like this:
+if(voltage > 1){
+  integral = 0;
+}
+We can reset the integral, so that it only provides a kick when the voltage is 1 or lower.
+
+Capping the velocity:
+Even with a PID loop, you dont want the velocity to be too high, as this can lead to unreliable results, so this can be reset using an
+if statement in the loop, ie:
+if(voltage > 6){
+  power = 6;
+}
+after the power is determined using the voltage = kP*error - kD*dv + kI*integral equation.
+
+When to use each control loop:
+A lot of the time in VEX, a PD is useful enough for turning or moving the robot forward, sometimes a P is useful, sometimes a PI, 
+and sometimes a full PID nets the best results, whatever you want to do is up to you. For example, a proportional loop is sometimes
+sufficient for correcting the turn of a robot when driving forwards, but for strafing we needed a PD to correct that.
+
+Using a PID to correct turning error in moving forward:
+This can be done in two ways: using a gyro to measure error, or measuring the rate of rotation of a shaft encoder.
+However you decide to measure error, its generally reliable and simple to have one side run at a not changed velocity, typically the
+slower side, and adjust the speed of the other side to match or correct the turning.
+
