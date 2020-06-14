@@ -1,3 +1,7 @@
+We highly recommend you look at these resources for learning about PIDs, they probably explain it bettrer than we do:
+https://smithcsrobot.weebly.com/uploads/6/0/9/5/60954939/pid_control_document.pdf
+https://renegaderobotics.org/pid-beginners-guide/#lessPower
+
 First, we will detail what issues we encountered when not using a PID loop and using a simple motor.rotatefor() command.
 1.  Using only rotations would cause mechanisms to overshoot, which would be fine if our error margins were lenient enough, or if the
     overshoot was consistent. However, none of this was the case for moving the robot forwards/backwards, strafing, and especially when
@@ -71,4 +75,3 @@ Using a PID to correct turning error in moving forward:
 This can be done in two ways: using a gyro to measure error, or measuring the rate of rotation of a shaft encoder.
 However you decide to measure error, its generally reliable and simple to have one side run at a not changed velocity, typically the
 slower side, and adjust the speed of the other side to match or correct the turning.
-
