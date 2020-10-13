@@ -1,6 +1,6 @@
 main.cpp has main loop with autonomous and driver routines, these use functions from:
 Functions.h, which contain functions that manipulate motors defined in:
-Motors.h, which are defined using classes contained in 
+Motors.h, which are defined using classes defined in 
 vex.h
 
 
