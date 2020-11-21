@@ -26,7 +26,7 @@ This variable must then be assigned the object, by doing = vex::motor(...) and s
 device object and gives it the variable name, unless it is a brain or main controller.
 */
 
-vex::brain god; //eg our brain is called go
+vex::brain god; //eg our brain is called god
 vex::controller MCkun;
 vex::controller SCkun = vex::controller(vex::controllerType::partner); //this is the partner controller
 
