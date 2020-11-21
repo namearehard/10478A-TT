@@ -58,7 +58,7 @@
 }
  
  void usercontrol( void ) { //driver control is defined here
-  turnyBoi.setHeading(180, vex::deg);  //sets where the gyro os facing as 180 degrees
+  turnyBoi.setHeading(180, vex::deg);  //sets where the gyro is facing as 180 degrees
   double driveOldGyro = int(floor(turnyBoi.heading()))%360; //old exeprimental code, not used at all, only in commented block
   while (true) { //all driver code is in loop so robot can continuously respond to controller
 
