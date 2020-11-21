@@ -18,7 +18,7 @@ for other types look up C++ data types
 
 
 /*
-sometimes its a good idea to defined your power variables up here, to use in any function (these are called global variables)
+sometimes its a good idea to define your power variables up here, to use in any function (these are called global variables)
 and change all powers in the functions really quickly
 
 I must stress, dont use global variables for anything else unless you ABSOLUTELY have to, otherwise you wont understand
